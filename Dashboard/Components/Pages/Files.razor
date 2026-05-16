@@ -1,0 +1,166 @@
+@page "/files"
+@using llm_protector.protection.riskfiles
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject RiskFileService FileService
+
+<div class="container-fluid">
+    <!-- Compacte, platte header -->
+    <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom border-dark">
+        <div>
+            <h4 class="mb-0 fw-bold text-dark">Files</h4>
+        </div>
+        <div class="text-end small text-muted">
+            Geladen bestanden: @FileService.GetRiskFiles().Count
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Links: Upload Systeem -->
+        <div class="col-lg-4">
+            <div class="p-3 border border-dark bg-light" style="border-radius: 0;">
+                <div class="fw-bold text-uppercase border-bottom border-dark pb-2 mb-3 small">
+                    New File
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Type</label>
+                    <select class="form-select form-select-sm border-dark" style="border-radius: 0;" @bind="selectedTypeString">
+                        <option value="WORD">Word (Sensitive words)</option>
+                        <option value="PATTERN">Pattern (Regex)</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Select .txt bestand</label>
+                    <InputFile OnChange="TrackSelectedFile" class="form-control form-control-sm border-dark" style="border-radius: 0;" accept=".txt" />
+                </div>
+                
+                <div class="mb-3">
+                    <button class="btn btn-sm btn-dark w-100 fw-bold" style="border-radius: 0;" @onclick="ExecuteUpload" disabled="@(selectedFile == null)">
+                        Upload
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rechts: Opgeslagen Handtekeningen -->
+        <div class="col-lg-8">
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle mb-0" style="border-color: #333; border-radius: 0;">
+                    <thead class="table-secondary text-uppercase small">
+                        <tr>
+                            <th scope="col">Filename</th>
+                            <th scope="col" style="width: 20%;">Type</th>
+                            <th scope="col" style="width: 20%;" class="text-center">Status</th>
+                            <th scope="col" style="width: 15%;" class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (FileService.GetRiskFiles().Count == 0)
+                        {
+                            <tr>
+                                <td colspan="4" class="p-4 text-center text-muted small bg-light">
+                                    No files
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var file in FileService.GetRiskFiles())
+                            {
+                                <tr>
+                                    <td class="fw-bold">@file.FileName</td>
+                                    <td>
+                                        <select class="form-select form-select-sm font-monospace border-dark py-0"
+                                                style="border-radius: 0; font-size: 0.85rem; font-weight: bold;"
+                                                value="@file.FileType.ToString()"
+                                                @onchange="(e) => OnTypeSelectToggle(file.FileName, e.Value?.ToString())">
+                                            <option value="WORD">WORD (Sensitive)</option>
+                                            <option value="PATTERN">PATTERN (Regex)</option>
+                                        </select>
+                                    </td>
+                                    <td class="text-center bg-light">
+                                        <select class="form-select form-select-sm border-dark text-center py-0" 
+                                                style="border-radius: 0; font-size: 0.85rem; font-weight: bold; color: @(file.IsActive ? "#157347" : "#bb2d3b");"
+                                                value="@(file.IsActive ? "ACTIVE" : "INACTIVE")"
+                                                @onchange="(e) => OnStatusSelectToggle(file.FileName, e.Value?.ToString())">
+                                            <option value="ACTIVE" style="color: #157347; font-weight: bold;">ACTIVE</option>
+                                            <option value="INACTIVE" style="color: #bb2d3b; font-weight: bold;">INACTIVE</option>
+                                        </select>
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-danger py-0 fw-bold w-100" 
+                                                style="border-radius: 0; font-size: 0.8rem;"
+                                                @onclick="() => DeleteFile(file.FileName)">
+                                            REMOVE
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string selectedTypeString = "WORD";
+    private IBrowserFile? selectedFile = null;
+    private string uploadStatus = string.Empty;
+    
+    private void TrackSelectedFile(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        uploadStatus = $"SYS: {selectedFile.Name} klaargezet voor upload.";
+    }
+    
+    private async Task ExecuteUpload()
+    {
+        if (selectedFile == null) return;
+        
+        try
+        {
+            if (!Enum.TryParse<FileType>(selectedTypeString, out var finalFileType))
+            {
+                finalFileType = FileType.WORD;
+            }
+
+            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 1024 * 1024);
+            using var reader = new StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+            
+            await FileService.SaveUploadedFileAsync(selectedFile.Name, content, finalFileType);
+            
+            uploadStatus = $"SUCCESS: {selectedFile.Name} weggeschreven onder type [{finalFileType}].";
+            selectedFile = null;
+        }
+        catch (Exception ex)
+        {
+            uploadStatus = $"❌ ERROR: {ex.Message}";
+        }
+    }
+    
+    private void OnTypeSelectToggle(string fileName, string? selectedValue)
+    {
+        if (Enum.TryParse<FileType>(selectedValue, out var newFileType))
+        {
+            FileService.UpdateFileType(fileName, newFileType);
+            Console.WriteLine($"[SYS_LOG] [{DateTime.Now:HH:mm:ss}] FILE_TYPE_CHANGED -> {fileName} = {newFileType}");
+        }
+    }
+
+    private void OnStatusSelectToggle(string fileName, string? selectedValue)
+    {
+        bool isActive = selectedValue == "ACTIVE";
+        FileService.ToggleFileStatus(fileName, isActive);
+        Console.WriteLine($"[SYS_LOG] [{DateTime.Now:HH:mm:ss}] FILE_STATUS_CHANGED -> {fileName} = {(isActive ? "ACTIVE" : "INACTIVE")}");
+    }
+    
+    private void DeleteFile(string fileName)
+    {
+        FileService.DeleteFile(fileName);
+        Console.WriteLine($"[SYS_LOG] [{DateTime.Now:HH:mm:ss}] FILE_DELETED -> {fileName}");
+    }
+}

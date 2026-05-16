@@ -1,0 +1,30 @@
+﻿@using BlazorApp1.Components.Pages
+@using Microsoft.AspNetCore.Components.Authorization
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                
+                <NotAuthorized>
+                    <RedirectToLogin />
+                </NotAuthorized>
+                
+                <Authorizing>
+                    <!-- Dit zie je heel kort tijdens het controleren van de cookie -->
+                    <div class="d-flex justify-content-center align-items-center vh-100 bg-dark text-white">
+                        <div class="text-center">
+                            <div class="spinner-border text-info mb-3" role="status"></div>
+                            <h4>Beveiliging controleren... 🛡️</h4>
+                        </div>
+                    </div>
+                </Authorizing>
+                
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
+        </Found>
+        <NotFound>
+            <NotFound/>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

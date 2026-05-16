@@ -1,0 +1,57 @@
+@page "/filters"
+@using llm_protector.protection.filter
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject FilterManagementService FilterService
+
+<div class="container-fluid">
+    <!-- Compacte, platte header -->
+    <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom border-dark">
+        <div>
+            <h4 class="mb-0 fw-bold font-monospace text-dark">Filters</h4>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-bordered table-sm align-middle" style="border-color: #333; border-radius: 0;">
+            <thead class="table-secondary text-uppercase small">
+                <tr>
+                    <th scope="col" style="width: 15%;">Naam</th>
+                    <th scope="col" style="width: 50%;">Beschrijving</th>
+                    <th scope="col" style="width: 20%;">Active</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var filter in FilterService.GetFilters())
+                {
+                    <tr>
+                        <td>@filter.Name</td>
+                        <td class="text-muted small">@filter.Description</td>
+                        <td class="text-center bg-light">
+                            <!-- Simpele HTML select box in plaats van een hippe geanimeerde switch -->
+                            <select class="form-select form-select-sm font-monospace border-dark text-center py-0" 
+                                    style="border-radius: 0; font-size: 0.85rem; font-weight: bold; color: @(filter.IsEnabled ? "#157347" : "#bb2d3b");"
+                                    value="@(filter.IsEnabled ? "ENABLED" : "DISABLED")"
+                                    @onchange="(e) => OnFilterSelectToggle(filter.Type, e.Value?.ToString())">
+                                <option value="ENABLED" style="color: #157347; font-weight: bold;">ENABLED</option>
+                                <option value="DISABLED" style="color: #bb2d3b; font-weight: bold;">DISABLED</option>
+                            </select>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private void OnFilterSelectToggle(FilterType type, string? selectedValue)
+    {
+        bool isEnabled = selectedValue == "ENABLED";
+        
+        // Update direct de centrale JSON configuratie
+        FilterService.ToggleFilter(type, isEnabled);
+        
+        // Systeemlogboek in je terminal
+        Console.WriteLine($"[SYS_LOG] [{DateTime.Now:HH:mm:ss}] FILTER_{type} STATE_CHANGED -> {(isEnabled ? "ENABLED" : "DISABLED")}");
+    }
+}

@@ -1,0 +1,89 @@
+@page "/login"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@inject NavigationManager Nav
+@layout EmptyLayout
+
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="utf-8" />
+    <title>🛡️ YAP Proxy - Login</title>
+    <style>
+        .login-card {
+            background-color: #1e293b !important;
+            border: 1px solid #334155 !important;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="d-flex align-items-center justify-content-center" style="height: 100vh;">
+
+<div class="card login-card p-4 text-white" style="width: 380px;">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold text-info mb-1">🛡️ Safety Guard</h2>
+        <small class="text-muted font-monospace text-uppercase">YAP Proxy Dashboard</small>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger py-2 small mb-3 border-0 bg-danger bg-opacity-25 text-danger-bootstrap">
+            ❌ @errorMessage
+        </div>
+    }
+
+    <!-- [Zij-instroom via SupplyParameterFromForm]: we vangen de data op via Blazor's formulierhandler -->
+    <EditForm Model="Input" FormName="LoginForm" OnValidSubmit="HandleLogin" method="post">
+        <div class="mb-4">
+            <label class="form-label small uppercase font-monospace fw-bold text-muted">Beheerderswachtwoord</label>
+            <InputText @bind-Value="Input.Password" type="password" class="form-control bg-dark text-white border-secondary" placeholder="••••••••" required />
+        </div>
+        
+        <button type="submit" class="btn btn-info w-100 fw-bold text-dark shadow-sm py-2">
+            Verbinding Maken 🚀
+        </button>
+    </EditForm>
+</div>
+
+</body>
+</html>
+
+@code {
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm]
+    public LoginInput Input { get; set; } = new();
+
+    private string errorMessage = string.Empty;
+
+    public class LoginInput
+    {
+        public string Password { get; set; } = string.Empty;
+    }
+
+    private async Task HandleLogin()
+    {
+        // TODO: Vervang dit later door een veilige hash of omgevingsvariabele uit je .env!
+        if (Input.Password == "admin123")
+        {
+            var claims = new List<Claim> { new Claim(ClaimTypes.Name, "Admin") };
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            if (HttpContext != null)
+            {
+                // Omdat we 'method="post"' gebruiken op de EditForm, kan .NET de cookie nu wél veilig wegschrijven via HTTP!
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+                Nav.NavigateTo("/filters", forceLoad: true); // Forceer een herlaad zodat de auth-cookie direct actief is!
+            }
+        }
+        else
+        {
+            errorMessage = "Toegang geweigerd. Onjuist wachtwoord.";
+        }
+    }
+}

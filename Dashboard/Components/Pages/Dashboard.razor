@@ -1,0 +1,103 @@
+@page "/"
+@using llm_protector
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject ProxyLogService LogService
+
+<div class="container-fluid pt-3">
+    <!-- Compacte, platte header -->
+    <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom border-dark font-monospace">
+        <div>
+            <h4 class="mb-0 fw-bold text-dark">PROXY_CONTROL_PANEL</h4>
+            <span class="text-muted small">Real-time Traffic and Policy Monitor</span>
+        </div>
+    </div>
+
+    <div class="row g-3 font-monospace">
+        <!-- Links: Instellingen (Plat sysadmin blok) -->
+        <div class="col-lg-4">
+            <div class="p-3 border border-dark bg-light h-100" style="border-radius: 0;">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase d-block mb-2">Filter Status</label>
+                    <div class="form-check form-switch p-0 d-flex align-items-center">
+                        <input class="form-check-input m-0" type="checkbox" role="switch" id="filterSwitch"
+                               style="cursor: pointer; width: 2.5em; height: 1.25em; border-radius: 0; border-color: #333;"
+                               @bind="LogService.IsFilterActive" />
+                        
+                        <label class="form-check-label font-monospace small fw-bold ms-2" for="filterSwitch"
+                               style="color: @(LogService.IsFilterActive ? "#157347" : "#bb2d3b");">
+                            @(LogService.IsFilterActive ? "[ACTIVE] (Filtering Enabled)" : "[INACTIVE] (Bypass All Traffic)")
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase">Block Message (HTTP 403 Content)</label>
+                    <textarea class="form-control form-control-sm bg-white text-dark border-dark font-monospace small" 
+                              rows="4" 
+                              @bind="LogService.CustomBlockMessage" 
+                              style="resize: none; border-radius: 0;"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rechts: Live Proxy Logs (Technische tabel) -->
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center bg-secondary text-uppercase small p-2 text-white border border-dark border-bottom-0" style="border-radius: 0;">
+                <span class="fw-bold">[LOG] LIVE_TRAFFIC_STREAM</span>
+            </div>
+
+            <div class="table-responsive border border-dark" style="max-height: 500px; overflow-y: auto; border-radius: 0;">
+                <table class="table table-bordered table-sm table-hover align-middle mb-0" style="border-radius: 0; border: none;">
+                    <thead class="table-light text-uppercase small sticky-top" style="z-index: 1; outline: 1px solid #333;">
+                        <tr>
+                            <th scope="col" style="width: 15%;">Timestamp</th>
+                            <th scope="col" style="width: 15%;">State</th>
+                            <th scope="col" style="width: 25%;">Violation Rule</th>
+                            <th scope="col" style="width: 45%;">Payload Body</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (LogService.GetRecentLogs().Count == 0)
+                        {
+                            <tr>
+                                <td colspan="4" class="p-4 text-center text-muted small bg-light">
+                                    [EMPTY] Geen inkomende proxy logs geregistreerd in huidige actieve sessie.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var log in LogService.GetRecentLogs())
+                            {
+                                <tr>
+                                    <td class="text-muted small">@log.Timestamp.ToString("HH:mm:ss.fff")</td>
+                                    <td>
+                                        <span class="fw-bold small" style="color: @(log.IsBlocked ? "#bb2d3b" : "#157347");">
+                                            [@(log.IsBlocked ? "BLOCKED" : "ALLOWED")]
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="small @(log.IsBlocked ? "text-danger fw-bold" : "text-muted")">
+                                            @(string.IsNullOrEmpty(log.Reason) ? "N/A (PASS)" : log.Reason)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <!-- Clean datablok met interne scrollbar bij mega lange prompts -->
+                                        <div class="p-1 border bg-white small text-dark" 
+                                             style="max-height: 90px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; border-radius: 0; font-size: 0.8rem; border-color: #eee !important;">
+                                            @log.RequestBody
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+}
