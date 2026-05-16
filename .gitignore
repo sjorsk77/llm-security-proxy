@@ -1,9 +1,11 @@
+/.idea/
+
 .env
 
-.idea/
 *.sln.DotSettings.user
 *.user
 *.suo
+.idea
 
 bin/
 obj/
