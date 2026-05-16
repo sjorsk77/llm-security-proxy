@@ -1,0 +1,1 @@
+(?i)ignore\s+(all\s+)?previous\s+instructions
