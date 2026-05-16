@@ -6,10 +6,17 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
         <RootNamespace>BlazorApp1</RootNamespace>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Shared\Shared.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
     </ItemGroup>
 
 </Project>
