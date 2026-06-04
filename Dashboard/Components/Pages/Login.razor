@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Authentication.Cookies
 @inject NavigationManager Nav
 @layout EmptyLayout
+@inject IHttpContextAccessor HttpContextAccessor
 
 <!-- Centreringscontainer via flexbox (vult het hele scherm) -->
 <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #ffffff; font-family: Arial, Helvetica, sans-serif;">
@@ -54,8 +55,7 @@
                 </div>
             </EditForm>
         </div>
-
-        <!-- Kleine copyright / systeemvoetbalk -->
+        
         <div style="background-color: #eaeaea; padding: 4px 10px; font-size: 11px; color: #555555; border-top: 1px solid #808080; text-align: right;">
             Beveiligd via YAP Security Guard v1.0
         </div>
@@ -64,8 +64,6 @@
 </div>
 
 @code {
-    [CascadingParameter]
-    public HttpContext? HttpContext { get; set; }
 
     [SupplyParameterFromForm]
     public LoginInput Input { get; set; } = new();
@@ -79,17 +77,16 @@
 
     private async Task HandleLogin()
     {
+        var context = HttpContextAccessor.HttpContext;
+        
         if (Input.Password == "admin123")
         {
             var claims = new List<Claim> { new Claim(ClaimTypes.Name, "Admin") };
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
 
-            if (HttpContext != null)
-            {
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-                Nav.NavigateTo("/", forceLoad: true); // Netjes terugsturen naar je nieuwe PHPMyAdmin dashboard!
-            }
+            await context!.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+            Nav.NavigateTo("/", forceLoad: true);
         }
         else
         {

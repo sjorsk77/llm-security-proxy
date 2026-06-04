@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using llm_protector.log;
 using Shared.settings;
 
 namespace llm_protector.protection;
@@ -17,7 +18,7 @@ public enum DecodingMethod
 public record DecodingResult(string DecodedContent, long ElapsedMs, DecodingMethod Method);
 
 public class DecodingService(
-    ILogger<DecodingService> logger,
+    LogDecorator logger,
     SettingsService settings
     )
 {
@@ -27,13 +28,12 @@ public class DecodingService(
         var result = decodeAction(input);
         sw.Stop();
         
-        logger.LogInformation("Decoding step: {Method} finished in {ElapsedMs}ms. Changed: {Changed}", 
-            method, sw.ElapsedMilliseconds, input != result);
+        logger.LogDecodingStep(method, sw.ElapsedMilliseconds, result != input);
             
         return new DecodingResult(result, sw.ElapsedMilliseconds, method);
     }
 
-    public string PreprocessBody(string prompt)
+    public string DecodeMessage(string prompt)
     {
         var sw = Stopwatch.StartNew();
         var currentPrompt = prompt;
@@ -93,8 +93,7 @@ public class DecodingService(
         
         sw.Stop();
         
-        logger.LogInformation("Decoding finished. Changed: {Changed}, Total time: {TotalMs}ms, Iterations: {Iterations}", 
-            prompt != currentPrompt, sw.ElapsedMilliseconds, iterations);
+        logger.LogDecodingProcess(prompt != currentPrompt, sw.ElapsedMilliseconds, iterations);
     
         return currentPrompt;
     }

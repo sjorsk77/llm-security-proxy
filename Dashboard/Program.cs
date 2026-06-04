@@ -18,6 +18,8 @@ builder.Services.AddSingleton<ProxyLogService>();
 builder.Services.AddSingleton<SettingsService>();
 builder.Services.AddSingleton<DatabaseService>();
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {

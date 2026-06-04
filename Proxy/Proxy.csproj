@@ -12,6 +12,8 @@
         <PackageReference Include="dotenv.net" Version="4.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10"/>
         <PackageReference Include="Microsoft.ML" Version="5.0.0" />
+        <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.26.0" />
+        <PackageReference Include="Microsoft.ML.Tokenizers" Version="3.0.0-preview.26160.2" />
         <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
         <PackageReference Include="Serilog.Sinks.Grafana.Loki" Version="8.3.2" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
@@ -36,6 +38,19 @@
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
+      <Content Update="onnx\tokenizer.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="onnx\**\*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="static_filter\" />
     </ItemGroup>
 
 </Project>
