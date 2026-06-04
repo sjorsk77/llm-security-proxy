@@ -1,4 +1,6 @@
-﻿services:
+﻿version: "3.8"
+
+services:
   dashboard:
     container_name: llm-security-dashboard
     build:
@@ -16,12 +18,40 @@
       context: .
       dockerfile: Proxy/Dockerfile
     ports:
-      - "8000:8080"
+      - "8080:8080"
     volumes:
       - sqlite-data:/app/data
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
+      - LOKI_URL=http://loki:3100
     restart: always
+    depends_on:
+      - loki
+  
+  loki:
+    container_name: loki
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    volumes:
+      - loki-data:/tmp/loki
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=test123
+    depends_on:
+      - loki
+    restart: unless-stopped
+    volumes:
+      - grafana-data:/var/lib/grafana
 
 volumes:
   sqlite-data:
+  loki-data:
+  grafana-data:

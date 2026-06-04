@@ -3,37 +3,45 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject FilterManagementService FilterService
 
-<div class="container-fluid">
-    <!-- Compacte, platte header -->
-    <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom border-dark">
+<!-- Main container using flexbox -->
+<div style="display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;">
+
+    <!-- Page header with flexbox -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 10px; margin-bottom: 20px; border-bottom: 2px solid #000000;">
         <div>
-            <h4 class="mb-0 fw-bold font-monospace text-dark">Filters</h4>
+            <h2 style="margin: 0; padding: 0; font-weight: bold;">System filters</h2>
+        </div>
+        <div style="font-size: 13px; color: #555555;">
+            Total engines: <strong>@FilterService.GetFilters().Count</strong>
         </div>
     </div>
     
-    <div class="table-responsive">
-        <table class="table table-bordered table-sm align-middle" style="border-color: #333; border-radius: 0;">
-            <thead class="table-secondary text-uppercase small">
+    <!-- Data Table Container (Classic PHPMyAdmin overview style) -->
+    <div style="display: flex; flex-direction: column; border: 1px solid #808080;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; background-color: #ffffff;">
+            <thead style="background-color: #d4d0c8; border-bottom: 1px solid #000000;">
                 <tr>
-                    <th scope="col" style="width: 15%;">Naam</th>
-                    <th scope="col" style="width: 50%;">Beschrijving</th>
-                    <th scope="col" style="width: 20%;">Active</th>
+                    <th style="padding: 6px; border-right: 1px solid #808080; width: 25%;">Filter name</th>
+                    <th style="padding: 6px; border-right: 1px solid #808080; width: 55%;">Description</th>
+                    <th style="padding: 6px; width: 20%; text-align: center;">Status</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var filter in FilterService.GetFilters())
                 {
-                    <tr>
-                        <td>@filter.Name</td>
-                        <td class="text-muted small">@filter.Description</td>
-                        <td class="text-center bg-light">
-                            <!-- Simpele HTML select box in plaats van een hippe geanimeerde switch -->
-                            <select class="form-select form-select-sm font-monospace border-dark text-center py-0" 
-                                    style="border-radius: 0; font-size: 0.85rem; font-weight: bold; color: @(filter.IsEnabled ? "#157347" : "#bb2d3b");"
-                                    value="@(filter.IsEnabled ? "ENABLED" : "DISABLED")"
-                                    @onchange="(e) => OnFilterSelectToggle(filter.Type, e.Value?.ToString())">
-                                <option value="ENABLED" style="color: #157347; font-weight: bold;">ENABLED</option>
-                                <option value="DISABLED" style="color: #bb2d3b; font-weight: bold;">DISABLED</option>
+                    <tr style="border-bottom: 1px solid #cccccc; background-color: #ffffff;">
+                        <td style="padding: 8px 6px; border-right: 1px solid #808080; font-weight: bold; vertical-align: middle;">
+                            @filter.Name
+                        </td>
+                        <td style="padding: 8px 6px; border-right: 1px solid #808080; color: #555555; vertical-align: middle;">
+                            @filter.Description
+                        </td>
+                        <td style="padding: 8px 6px; text-align: center; vertical-align: middle; background-color: #fafafa;">
+                            <select value="@(filter.IsEnabled ? "ENABLED" : "DISABLED")" 
+                                    @onchange="(e) => OnFilterSelectToggle(filter.Type, e.Value?.ToString())"
+                                    style="padding: 2px; font-size: 12px; border: 1px solid #808080; font-weight: bold; color: @(filter.IsEnabled ? "#006600" : "#cc0000"); text-align: center; width: 120px;">
+                                <option value="ENABLED" style="color: #006600;">Enabled</option>
+                                <option value="DISABLED" style="color: #cc0000;">Disabled</option>
                             </select>
                         </td>
                     </tr>

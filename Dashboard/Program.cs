@@ -4,6 +4,7 @@ using llm_protector.protection.filter;
 using llm_protector.protection.riskfiles;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Shared;
+using Shared.settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddSingleton<FilterManagementService>();
 builder.Services.AddSingleton<RiskFileService>();
 builder.Services.AddSingleton<ProxyLogService>();
+builder.Services.AddSingleton<SettingsService>();
 builder.Services.AddSingleton<DatabaseService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

@@ -1,0 +1,146 @@
+@page "/preprocessing"
+@using Shared.settings
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject SettingsService Set
+
+<!-- Main container using flexbox -->
+<div style="display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;">
+
+    <!-- Page header with flexbox -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 10px; margin-bottom: 20px; border-bottom: 2px solid #000000;">
+        <div>
+            <h2 style="margin: 0; padding: 0; font-weight: bold;">Pre-processing engines</h2>
+        </div>
+    </div>
+
+    <!-- Main settings block -->
+    <div style="display: flex; flex-direction: column; border: 1px solid #808080; background-color: #f5f5f5; width: 100%; max-width: 750px;">
+        
+        <div style="display: flex; background-color: #d4d0c8; padding: 6px 10px; border-bottom: 1px solid #808080;">
+            <span style="font-size: 13px; font-weight: bold; color: #000000;">De-obfuscation and normalisation rules</span>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tbody>
+                <!-- ROW 1: URL DECODING -->
+                <tr style="border-bottom: 1px solid #cccccc;">
+                    <td style="padding: 12px 10px; background-color: #eaeaea; width: 35%; font-weight: bold; border-right: 1px solid #cccccc; vertical-align: top;">
+                        <p>URL percent decoding</p>
+                    </td>
+                    <td style="padding: 12px 10px; background-color: #ffffff; width: 65%;">
+                        <div style="display: flex; align-items: flex-start; flex-direction: column;">
+                            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                                <input type="checkbox" id="chkUrl" @bind="Set.DecodeUrl" style="cursor: pointer; margin: 0; margin-right: 8px;" />
+                                <label for="chkUrl" style="cursor: pointer; font-weight: bold; color: @(Set.DecodeUrl ? "#006600" : "#cc0000");">
+                                    @(Set.DecodeUrl ? "Enabled" : "Disabled")
+                                </label>
+                            </div>
+                            <span style="font-size: 11px; color: #555555;">Translates hex characters (e.g., %61 to 'a') to block obfuscated evasion strings.</span>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- ROW 2: BASE64 DECODING -->
+                <tr style="border-bottom: 1px solid #cccccc;">
+                    <td style="padding: 12px 10px; background-color: #eaeaea; font-weight: bold; border-right: 1px solid #cccccc; vertical-align: top;">
+                        <p>Base64 detection and decode</p>
+                    </td>
+                    <td style="padding: 12px 10px; background-color: #ffffff;">
+                        <div style="display: flex; align-items: flex-start; flex-direction: column;">
+                            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                                <input type="checkbox" id="chkBase64" @bind="Set.DecodeBase64" style="cursor: pointer; margin: 0; margin-right: 8px;" />
+                                <label for="chkBase64" style="cursor: pointer; font-weight: bold; color: @(Set.DecodeBase64 ? "#006600" : "#cc0000");">
+                                    @(Set.DecodeBase64 ? "Enabled" : "Disabled")
+                                </label>
+                            </div>
+                            <span style="font-size: 11px; color: #555555;">Scans for Base64 structures, decodes them to plain text, and enforces signature checks on the inner payload.</span>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- ROW 3: HTML ENTITY DECODING -->
+                <tr style="border-bottom: 1px solid #cccccc;">
+                    <td style="padding: 12px 10px; background-color: #eaeaea; font-weight: bold; border-right: 1px solid #cccccc; vertical-align: top;">
+                        <p>HTML entity decoding</p>
+                    </td>
+                    <td style="padding: 12px 10px; background-color: #ffffff;">
+                        <div style="display: flex; align-items: flex-start; flex-direction: column;">
+                            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                                <input type="checkbox" id="chkHtml" @bind="Set.DecodeHtml" style="cursor: pointer; margin: 0; margin-right: 8px;" />
+                                <label for="chkHtml" style="cursor: pointer; font-weight: bold; color: @(Set.DecodeHtml ? "#006600" : "#cc0000");">
+                                    @(Set.DecodeHtml ? "Enabled" : "Disabled")
+                                </label>
+                            </div>
+                            <span style="font-size: 11px; color: #555555;">Converts html character references (e.g., &amp;#101; to 'e') back to readable text.</span>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- ROW 4: UNICODE ESCAPE DECODING -->
+                <tr style="border-bottom: 1px solid #cccccc;">
+                    <td style="padding: 12px 10px; background-color: #eaeaea; font-weight: bold; border-right: 1px solid #cccccc; vertical-align: top;">
+                        <p>Unicode escape normalisation</p>
+                    </td>
+                    <td style="padding: 12px 10px; background-color: #ffffff;">
+                        <div style="display: flex; align-items: flex-start; flex-direction: column;">
+                            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                                <input type="checkbox" id="chkUnicode" @bind="Set.DecodeUnicode" style="cursor: pointer; margin: 0; margin-right: 8px;" />
+                                <label for="chkUnicode" style="cursor: pointer; font-weight: bold; color: @(Set.DecodeUnicode ? "#006600" : "#cc0000");">
+                                    @(Set.DecodeUnicode ? "Enabled" : "Disabled")
+                                </label>
+                            </div>
+                            <span style="font-size: 11px; color: #555555;">Parses standard script string sequences (e.g., \u0061) into native plain-text characters.</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr style="border-bottom: 1px solid #cccccc;">
+                    <td style="padding: 12px 10px; background-color: #eaeaea; font-weight: bold; border-right: 1px solid #cccccc; vertical-align: top;">
+                        Recursive multi-pass decoding
+                    </td>
+                    <td style="padding: 12px 10px; background-color: #ffffff;">
+                        <div style="display: flex; align-items: flex-start; flex-direction: column;">
+                            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                                <input type="checkbox" id="chkRecursive" @bind="Set.RecursiveDecoding" style="cursor: pointer; margin: 0; margin-right: 8px;" />
+                                <label for="chkRecursive" style="cursor: pointer; font-weight: bold; color: @(Set.RecursiveDecoding ? "#006600" : "#cc0000");">
+                                    @(Set.RecursiveDecoding ? "Enabled" : "Disabled")
+                                </label>
+                            </div>
+                            <span style="font-size: 11px; color: #555555;">
+                                When enabled, the proxy continuously peels decoding layers (up to 3 times) until the output stabilises. Disabling this limits decoding to a single pass for maximum performance.
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr style="border-bottom: 1px solid #cccccc;">
+                    <td style="padding: 12px 10px; background-color: #eaeaea; font-weight: bold; border-right: 1px solid #cccccc; vertical-align: top;">
+                        Maximum recursion depth
+                    </td>
+                    <td style="padding: 12px 10px; background-color: #ffffff;">
+                        <div style="display: flex; align-items: flex-start; flex-direction: column;">
+                            <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                                <input type="number" min="1" max="10" @bind="Set.RecursiveDepth" 
+                                       style="width: 60px; padding: 2px; font-size: 13px; border: 1px solid #808080; text-align: center; font-weight: bold;" />
+                                <span style="font-size: 12px; font-weight: bold; margin-left: 8px; color: #333333;">
+                                    iterations max per request
+                                </span>
+                            </div>
+                            <span style="font-size: 11px; color: #555555;">
+                                Defines how many times the proxy will re-decode the payload if changes are detected. Set to 1 for a single pass (highest performance). Higher values (e.g., 3) catch complex multi-layered bypass attempts but increase CPU exposure.
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+        </table>
+
+        <div style="display: flex; padding: 10px; background-color: #eaeaea; border-top: 1px solid #808080;">
+            <span style="font-size: 11px; color: #666666;">Changes take effect immediately upon the next intercepted prompt pipeline cycle.</span>
+        </div>
+    </div>
+
+</div>
+
+@code {
+}

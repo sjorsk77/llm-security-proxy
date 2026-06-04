@@ -3,64 +3,91 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject RiskFileService FileService
 
-<div class="container-fluid">
-    <!-- Compacte, platte header -->
-    <div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom border-dark">
+<!-- Main container using flexbox -->
+<div style="display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;">
+
+    <!-- Page header with flexbox -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 10px; margin-bottom: 20px; border-bottom: 2px solid #000000;">
         <div>
-            <h4 class="mb-0 fw-bold text-dark">Files</h4>
+            <h2 style="margin: 0; padding: 0; font-weight: bold;">File management</h2>
         </div>
-        <div class="text-end small text-muted">
-            Geladen bestanden: @FileService.GetRiskFiles().Count
+        <div style="font-size: 13px; color: #555555;">
+            Total loaded files: <strong>@FileService.GetRiskFiles().Count</strong>
         </div>
     </div>
 
-    <div class="row g-3">
-        <!-- Links: Upload Systeem -->
-        <div class="col-lg-4">
-            <div class="p-3 border border-dark bg-light" style="border-radius: 0;">
-                <div class="fw-bold text-uppercase border-bottom border-dark pb-2 mb-3 small">
-                    New File
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label small fw-bold text-uppercase">Type</label>
-                    <select class="form-select form-select-sm border-dark" style="border-radius: 0;" @bind="selectedTypeString">
-                        <option value="WORD">Word (Sensitive words)</option>
-                        <option value="PATTERN">Pattern (Regex)</option>
-                    </select>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label small fw-bold text-uppercase">Select .txt bestand</label>
-                    <InputFile OnChange="TrackSelectedFile" class="form-control form-control-sm border-dark" style="border-radius: 0;" accept=".txt" />
-                </div>
-                
-                <div class="mb-3">
-                    <button class="btn btn-sm btn-dark w-100 fw-bold" style="border-radius: 0;" @onclick="ExecuteUpload" disabled="@(selectedFile == null)">
-                        Upload
-                    </button>
-                </div>
+    <!-- Status message bar -->
+    @if (!string.IsNullOrEmpty(uploadStatus))
+    {
+        <div style="padding: 8px; margin-bottom: 15px; border: 1px solid #808080; background-color: #ffffcc; color: #000000; font-size: 12px;">
+            @uploadStatus
+        </div>
+    }
+
+    <!-- Two-column layout using flexbox -->
+    <div style="display: flex; gap: 20px; align-items: flex-start;">
+        
+        <!-- Left Column: Upload Form (Classic PHPMyAdmin fieldset style) -->
+        <div style="display: flex; flex-direction: column; border: 1px solid #808080; background-color: #f5f5f5; width: 350px; flex-shrink: 0;">
+            <div style="display: flex; background-color: #d4d0c8; padding: 6px 10px; border-bottom: 1px solid #808080;">
+                <span style="font-size: 13px; font-weight: bold; color: #000000;">Upload new risk file</span>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <tbody>
+                    <tr style="border-bottom: 1px solid #cccccc;">
+                        <td style="padding: 10px; background-color: #eaeaea; width: 35%; font-weight: bold; border-right: 1px solid #cccccc;">
+                            File type
+                        </td>
+                        <td style="padding: 10px; background-color: #ffffff; width: 65%;">
+                            <select @bind="selectedTypeString" style="width: 100%; padding: 2px; font-size: 13px; border: 1px solid #808080;">
+                                <option value="WORD">Word (Sensitive words)</option>
+                                <option value="PATTERN">Pattern (Regex expressions)</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; background-color: #eaeaea; font-weight: bold; border-right: 1px solid #cccccc; vertical-align: top;">
+                            Select file
+                        </td>
+                        <td style="padding: 10px; background-color: #ffffff;">
+                            <InputFile OnChange="TrackSelectedFile" style="width: 100%; font-size: 12px;" accept=".txt" />
+                            <span style="font-size: 11px; color: #555555; display: block; margin-top: 4px;">Only plain text (.txt) files are supported.</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="display: flex; justify-content: flex-end; padding: 8px; background-color: #eaeaea; border-top: 1px solid #808080;">
+                <button @onclick="ExecuteUpload" disabled="@(selectedFile == null)" 
+                        style="padding: 3px 12px; font-size: 13px; font-weight: bold; cursor: pointer; background-color: #eaeaea; border: 1px solid #808080;">
+                    Upload file
+                </button>
             </div>
         </div>
         
-        <!-- Rechts: Opgeslagen Handtekeningen -->
-        <div class="col-lg-8">
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm align-middle mb-0" style="border-color: #333; border-radius: 0;">
-                    <thead class="table-secondary text-uppercase small">
+        <!-- Right Column: Data Table -->
+        <div style="display: flex; flex-direction: column; border: 1px solid #808080; flex-grow: 1;">
+            <div style="display: flex; background-color: #808080; padding: 6px 10px; border-bottom: 1px solid #000000;">
+                <span style="color: #ffffff; font-size: 13px; font-weight: bold;">Stored signatures database</span>
+            </div>
+
+            <div style="max-height: 600px; overflow-y: scroll;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; background-color: #ffffff;">
+                    <thead style="position: sticky; top: 0; background-color: #d4d0c8; box-shadow: inset 0 -1px 0 #000000; z-index: 1;">
                         <tr>
-                            <th scope="col">Filename</th>
-                            <th scope="col" style="width: 20%;">Type</th>
-                            <th scope="col" style="width: 20%;" class="text-center">Status</th>
-                            <th scope="col" style="width: 15%;" class="text-center">Action</th>
+                            <th style="padding: 6px; border-right: 1px solid #808080; border-bottom: 1px solid #000000;">File name</th>
+                            <th style="padding: 6px; border-right: 1px solid #808080; border-bottom: 1px solid #000000; width: 25%;">Evaluation type</th>
+                            <th style="padding: 6px; border-right: 1px solid #808080; border-bottom: 1px solid #000000; width: 20%; text-align: center;">Status</th>
+                            <th style="padding: 6px; border-bottom: 1px solid #000000; width: 15%; text-align: center;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (FileService.GetRiskFiles().Count == 0)
                         {
                             <tr>
-                                <td colspan="4" class="p-4 text-center text-muted small bg-light">
-                                    No files
+                                <td colspan="4" style="padding: 30px; text-align: center; color: #555555; background-color: #ffffff;">
+                                    No active validation files found in the system database.
                                 </td>
                             </tr>
                         }
@@ -68,31 +95,30 @@
                         {
                             @foreach (var file in FileService.GetRiskFiles())
                             {
-                                <tr>
-                                    <td class="fw-bold">@file.FileName</td>
-                                    <td>
-                                        <select class="form-select form-select-sm font-monospace border-dark py-0"
-                                                style="border-radius: 0; font-size: 0.85rem; font-weight: bold;"
-                                                value="@file.FileType.ToString()"
-                                                @onchange="(e) => OnTypeSelectToggle(file.FileName, e.Value?.ToString())">
-                                            <option value="WORD">WORD (Sensitive)</option>
-                                            <option value="PATTERN">PATTERN (Regex)</option>
+                                <tr style="border-bottom: 1px solid #cccccc; background-color: #ffffff;">
+                                    <td style="padding: 6px; border-right: 1px solid #808080; font-weight: bold; vertical-align: middle;">
+                                        @file.FileName
+                                    </td>
+                                    <td style="padding: 6px; border-right: 1px solid #808080; vertical-align: middle;">
+                                        <select value="@file.FileType.ToString()" 
+                                                @onchange="(e) => OnTypeSelectToggle(file.FileName, e.Value?.ToString())"
+                                                style="padding: 2px; font-size: 12px; border: 1px solid #808080; width: 100%;">
+                                            <option value="WORD">Word (Sensitive)</option>
+                                            <option value="PATTERN">Pattern (Regex)</option>
                                         </select>
                                     </td>
-                                    <td class="text-center bg-light">
-                                        <select class="form-select form-select-sm border-dark text-center py-0" 
-                                                style="border-radius: 0; font-size: 0.85rem; font-weight: bold; color: @(file.IsActive ? "#157347" : "#bb2d3b");"
-                                                value="@(file.IsActive ? "ACTIVE" : "INACTIVE")"
-                                                @onchange="(e) => OnStatusSelectToggle(file.FileName, e.Value?.ToString())">
-                                            <option value="ACTIVE" style="color: #157347; font-weight: bold;">ACTIVE</option>
-                                            <option value="INACTIVE" style="color: #bb2d3b; font-weight: bold;">INACTIVE</option>
+                                    <td style="padding: 6px; border-right: 1px solid #808080; text-align: center; vertical-align: middle;">
+                                        <select value="@(file.IsActive ? "ACTIVE" : "INACTIVE")" 
+                                                @onchange="(e) => OnStatusSelectToggle(file.FileName, e.Value?.ToString())"
+                                                style="padding: 2px; font-size: 12px; border: 1px solid #808080; font-weight: bold; color: @(file.IsActive ? "#006600" : "#cc0000"); text-align: center;">
+                                            <option value="ACTIVE" style="color: #006600;">Active</option>
+                                            <option value="INACTIVE" style="color: #cc0000;">Inactive</option>
                                         </select>
                                     </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-sm btn-outline-danger py-0 fw-bold w-100" 
-                                                style="border-radius: 0; font-size: 0.8rem;"
-                                                @onclick="() => DeleteFile(file.FileName)">
-                                            REMOVE
+                                    <td style="padding: 6px; text-align: center; vertical-align: middle;">
+                                        <button @onclick="() => DeleteFile(file.FileName)" 
+                                                style="padding: 2px 10px; font-size: 12px; color: #cc0000; border: 1px solid #808080; background-color: #f5f5f5; cursor: pointer;">
+                                            Remove
                                         </button>
                                     </td>
                                 </tr>
@@ -102,6 +128,7 @@
                 </table>
             </div>
         </div>
+
     </div>
 </div>
 
@@ -113,7 +140,7 @@
     private void TrackSelectedFile(InputFileChangeEventArgs e)
     {
         selectedFile = e.File;
-        uploadStatus = $"SYS: {selectedFile.Name} klaargezet voor upload.";
+        uploadStatus = $"System: {selectedFile.Name} staged for deployment upload.";
     }
     
     private async Task ExecuteUpload()
@@ -133,12 +160,12 @@
             
             await FileService.SaveUploadedFileAsync(selectedFile.Name, content, finalFileType);
             
-            uploadStatus = $"SUCCESS: {selectedFile.Name} weggeschreven onder type [{finalFileType}].";
+            uploadStatus = $"Success: File {selectedFile.Name} successfully recorded as database rule type [{finalFileType}].";
             selectedFile = null;
         }
         catch (Exception ex)
         {
-            uploadStatus = $"❌ ERROR: {ex.Message}";
+            uploadStatus = $"Error: Failed to process file stream. Internal reasoning: {ex.Message}";
         }
     }
     

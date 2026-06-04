@@ -1,0 +1,80 @@
+@page "/"
+@using Shared.settings
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject SettingsService Set
+
+<!-- Hoofdcontainer met flexbox -->
+<div style="display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;">
+
+    <!-- Pagina-kop met flexbox -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 10px; margin-bottom: 20px; border-bottom: 2px solid #000000;">
+        <div>
+            <h2 style="margin: 0; padding: 0; font-weight: bold;">Global settings</h2>
+        </div>
+    </div>
+
+    <!-- Hoofdblok met flexbox -->
+    <div style="display: flex; flex-direction: column; border: 1px solid #808080; background-color: #f5f5f5; width: 100%; max-width: 700px;">
+        
+        <!-- Tabel titelbalk zoals PHPMyAdmin veldsets -->
+        <div style="display: flex; background-color: #d4d0c8; padding: 6px 10px; border-bottom: 1px solid #808080;">
+            <span style="font-size: 13px; font-weight: bold; color: #000000;">Settings</span>
+        </div>
+
+        <!-- Formulieromgeving opgebouwd via een HTML-tabel voor de echte klassieke uitlijning -->
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tbody>
+                <!-- RIJ 1: FILTER STATUS -->
+                <tr style="border-bottom: 1px solid #cccccc;">
+                    <td style="padding: 12px 10px; background-color: #eaeaea; width: 30%; font-weight: bold; border-right: 1px solid #cccccc; vertical-align: top;">
+                        Filter enabled
+                    </td>
+                    <td style="padding: 12px 10px; background-color: #ffffff; width: 70%;">
+                        <div style="display: flex; align-items: center;">
+                            <input type="checkbox" id="filterSwitch" @bind="Set.IsFilterActive" style="cursor: pointer; margin: 0; margin-right: 8px;" />
+                            <label for="filterSwitch" style="cursor: pointer; font-size: 12px; font-weight: bold; color: @(Set.IsFilterActive ? "#006600" : "#cc0000");">
+                                @(Set.IsFilterActive ? "Active (Traffic goes through the safety filter)" : "Inactive (Proxy bypasses all traffic)")
+                            </label>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- RIJ 2: BACKEND URL -->
+                <tr style="border-bottom: 1px solid #cccccc;">
+                    <td style="padding: 12px 10px; background-color: #eaeaea; font-weight: bold; border-right: 1px solid #cccccc; vertical-align: top;">
+                        LLM endpoint
+                    </td>
+                    <td style="padding: 12px 10px; background-color: #ffffff;">
+                        <div style="display: flex; flex-direction: column;">
+                            <input type="text" @bind="Set.BackendUrl" placeholder="https://api.openai.com/v1" 
+                                   style="width: 100%; max-width: 450px; padding: 3px; font-size: 13px; border: 1px solid #808080; background-color: #ffffff;" />
+                            <span style="font-size: 11px; color: #555555; margin-top: 4px;">Endpoint to where all traffic is sent to after filtering.</span>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- RIJ 3: BLOCK MESSAGE -->
+                <tr>
+                    <td style="padding: 12px 10px; background-color: #eaeaea; font-weight: bold; border-right: 1px solid #cccccc; vertical-align: top;">
+                        Custom rejection message
+                    </td>
+                    <td style="padding: 12px 10px; background-color: #ffffff;">
+                        <div style="display: flex; flex-direction: column;">
+                            <textarea rows="4" @bind="Set.CustomBlockMessage" 
+                                      style="width: 100%; max-width: 450px; padding: 4px; font-size: 13px; border: 1px solid #808080; background-color: #ffffff; resize: none;"></textarea>
+                            <span style="font-size: 11px; color: #555555; margin-top: 4px;">The response message whenever the filter rejects a request.</span>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="display: flex; justify-content: flex-end; padding: 10px; background-color: #eaeaea; border-top: 1px solid #808080;">
+            <span style="font-size: 11px; color: #666666; margin-right: auto; align-self: center;">All changes are directly saved to the database.</span>
+        </div>
+    </div>
+
+</div>
+
+@code {
+}

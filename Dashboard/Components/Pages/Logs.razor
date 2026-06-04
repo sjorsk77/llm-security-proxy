@@ -1,0 +1,78 @@
+@page "/logs"
+@using llm_protector
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject ProxyLogService LogService
+
+<!-- Hoofdcontainer met flexbox voor verticale uitlijning -->
+<div style="display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;">
+    
+    <!-- Pagina-kop met flexbox -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 10px; margin-bottom: 15px; border-bottom: 2px solid #000000;">
+        <div>
+            <h2 style="margin: 0; padding: 0; font-weight: bold;">Logs</h2>
+        </div>
+        <button @onclick="StateHasChanged" style="font-size: 16px; padding: 2px 6px; cursor: pointer; border: 1px solid #000000;">
+            Refresh
+        </button>
+    </div>
+    
+    <!-- Log overzicht sectie -->
+    <div style="display: flex; flex-direction: column; border: 1px solid #000000;">
+
+        <!-- Tabel container met scrollbar -->
+        <div style="max-height: 600px; overflow-y: scroll;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                <thead style="position: sticky; top: 0; background-color: #d4d0c8; box-shadow: inset 0 -1px 0 #000000;">
+                    <tr>
+                        <th style="padding: 6px; border-right: 1px solid #808080; border-bottom: 1px solid #000000; width: 12%;">Tijdstip</th>
+                        <th style="padding: 6px; border-right: 1px solid #808080; border-bottom: 1px solid #000000; width: 10%;">Status</th>
+                        <th style="padding: 6px; border-right: 1px solid #808080; border-bottom: 1px solid #000000; width: 23%;">Overtreden regel</th>
+                        <th style="padding: 6px; border-bottom: 1px solid #000000; width: 55%;">Berichtinhoud (Ruwe prompt)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var recentLogs = LogService.GetRecentLogs();
+                    }
+                    @if (recentLogs.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="4" style="padding: 40px; text-align: center; color: #555555; background-color: #ffffff;">
+                                Er zijn momenteel geen proxy logs opgeslagen in de database.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var log in recentLogs)
+                        {
+                            <tr style="background-color: @(log.IsBlocked ? "#ffeded" : "#ffffff"); border-bottom: 1px solid #808080;">
+                                <td style="padding: 6px; border-right: 1px solid #808080; color: #555555; vertical-align: top;">
+                                    @log.Timestamp.ToString("HH:mm:ss.fff")
+                                </td>
+                                <td style="padding: 6px; border-right: 1px solid #808080; vertical-align: top; font-weight: bold;">
+                                    <span style="color: @(log.IsBlocked ? "#cc0000" : "#006600");">
+                                        @(log.IsBlocked ? "Geweigerd" : "Toegestaan")
+                                    </span>
+                                </td>
+                                <td style="padding: 6px; border-right: 1px solid #808080; vertical-align: top; color: @(log.IsBlocked ? "#cc0000" : "#333333");">
+                                    @(string.IsNullOrEmpty(log.Reason) ? "Niet van toepassing" : log.Reason)
+                                </td>
+                                <td style="padding: 6px; vertical-align: top;">
+                                    <!-- Flexbox wrapper voor de interne scrolling text-box -->
+                                    <div style="display: flex; max-height: 100px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; font-size: 12px; background-color: #ffffff; padding: 4px; border: 1px solid #808080;">
+                                        @log.RequestBody
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+</div>
+
+@code {
+}

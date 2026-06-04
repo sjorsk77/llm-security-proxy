@@ -12,33 +12,7 @@ public class ProxyLogService
     {
         _db = db;
     }
-    public bool IsFilterActive
-    {
-        get
-        {
-            using var conn = _db.CreateConnection();
-            var val = conn.QueryFirstOrDefault<string>("SELECT Value FROM Settings WHERE Key = 'IsFilterActive';");
-            return val == "1";
-        }
-        set
-        {
-            using var conn = _db.CreateConnection();
-            conn.Execute("INSERT OR REPLACE INTO Settings (Key, Value) VALUES ('IsFilterActive', @val);", new { val = value ? "1" : "0" });
-        }
-    }
-    public string CustomBlockMessage
-    {
-        get
-        {
-            using var conn = _db.CreateConnection();
-            return conn.QueryFirstOrDefault<string>("SELECT Value FROM Settings WHERE Key = 'CustomBlockMessage';") ?? "Safety Guard: Request blocked";
-        }
-        set
-        {
-            using var conn = _db.CreateConnection();
-            conn.Execute("INSERT OR REPLACE INTO Settings (Key, Value) VALUES ('CustomBlockMessage', @val);", new { val = value });
-        }
-    }
+
     public void AddLogEntry(string body, bool isBlocked, string reason = "")
     {
         using var conn = _db.CreateConnection();

@@ -93,7 +93,6 @@ public class DatabaseService
                 ('WORD', 'Sensitive word filter', 'Scans incoming prompts on sensitive words.', 1),
                 ('PATTERN', 'Regex Pattern filter', 'Uses regular expressions to filter out sensitive patterns.', 1);";
             cmd.ExecuteNonQuery();
-            Console.WriteLine("[SYS_DB] Database succesvol geïnitialiseerd en gevuld met standaard filters.");
         }
         
         cmd.CommandText = @"
@@ -103,14 +102,17 @@ public class DatabaseService
             );";
         cmd.ExecuteNonQuery();
         
-        cmd.CommandText = "SELECT COUNT(*) FROM Settings;";
-        if (Convert.ToInt32(cmd.ExecuteScalar()) == 0)
-        {
-            cmd.CommandText = @"
-                INSERT INTO Settings (Key, Value) VALUES 
-                ('IsFilterActive', '1'),
-                ('CustomBlockMessage', 'Safety Guard: Request blocked');";
-            cmd.ExecuteNonQuery();
-        }
+        cmd.CommandText = @"
+            INSERT OR IGNORE INTO Settings (Key, Value) VALUES 
+            ('IsFilterActive', 'true'),
+            ('CustomBlockMessage', 'Safety Guard: Request blocked'),
+            ('BackendUrl', 'https://api.openai.com/v1'),
+            ('DecodeUrl', 'true'),
+            ('DecodeBase64', 'true'),
+            ('DecodeHtml', 'true'),
+            ('DecodeUnicode', 'true'),
+            ('RecursiveDecoding', 'true'),
+            ('RecursiveDepth', '3');";
+        cmd.ExecuteNonQuery();
     }
 }

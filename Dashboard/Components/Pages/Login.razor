@@ -5,51 +5,63 @@
 @inject NavigationManager Nav
 @layout EmptyLayout
 
+<!-- Centreringscontainer via flexbox (vult het hele scherm) -->
+<div style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #ffffff; font-family: Arial, Helvetica, sans-serif;">
 
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-    <meta charset="utf-8" />
-    <title>🛡️ YAP Proxy - Login</title>
-    <style>
-        .login-card {
-            background-color: #1e293b !important;
-            border: 1px solid #334155 !important;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-        }
-    </style>
-</head>
-<body class="d-flex align-items-center justify-content-center" style="height: 100vh;">
+    <!-- Het klassieke PHPMyAdmin login-venster -->
+    <div style="display: flex; flex-direction: column; width: 450px; border: 2px solid #808080; background-color: #f5f5f5; box-shadow: 2px 2px 0px #808080;">
+        
+        <!-- Titelbalk van het loginvenster -->
+        <div style="display: flex; background-color: #d4d0c8; padding: 6px 10px; border-bottom: 1px solid #808080;">
+            <h3 style="margin: 0; padding: 0; font-size: 14px; font-weight: bold; color: #000000;">YAP Proxy - Toegangscontrole</h3>
+        </div>
 
-<div class="card login-card p-4 text-white" style="width: 380px;">
-    <div class="text-center mb-4">
-        <h2 class="fw-bold text-info mb-1">🛡️ Safety Guard</h2>
-        <small class="text-muted font-monospace text-uppercase">YAP Proxy Dashboard</small>
+        <div style="padding: 15px;">
+            <p style="margin: 0 0 15px 0; font-size: 13px; color: #333333;">
+                Welkom bij het YAP Proxy controlepaneel. Voer het beheerderswachtwoord in om de filters en verkeersstromen te beheren.
+            </p>
+
+            <!-- Foutmelding in klassieke stijl (rode rand, lichtrode achtergrond) -->
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div style="padding: 8px; margin-bottom: 15px; border: 1px solid #cc0000; background-color: #ffeded; color: #cc0000; font-size: 12px; font-weight: bold;">
+                    Fout: @errorMessage
+                </div>
+            }
+
+            <!-- Formulieromgeving -->
+            <EditForm Model="Input" FormName="LoginForm" OnValidSubmit="HandleLogin" method="post">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 15px;">
+                    <tbody>
+                        <tr>
+                            <td style="padding: 10px; background-color: #eaeaea; width: 40%; font-weight: bold; border: 1px solid #cccccc;">
+                                Wachtwoord:
+                            </td>
+                            <td style="padding: 10px; background-color: #ffffff; width: 60%; border: 1px solid #cccccc;">
+                                <InputText @bind-Value="Input.Password" type="password" 
+                                           style="width: 100%; padding: 3px; font-size: 13px; border: 1px solid #808080; box-sizing: border-box;" 
+                                           placeholder="" required />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Actiebalk met de inlogknop -->
+                <div style="display: flex; justify-content: flex-end; padding-top: 10px; border-top: 1px solid #cccccc;">
+                    <button type="submit" style="padding: 4px 15px; font-size: 13px; font-weight: bold; cursor: pointer; background-color: #eaeaea; border: 1px solid #808080; box-shadow: 1px 1px 0px #ffffff inset;">
+                        Inloggen
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+
+        <!-- Kleine copyright / systeemvoetbalk -->
+        <div style="background-color: #eaeaea; padding: 4px 10px; font-size: 11px; color: #555555; border-top: 1px solid #808080; text-align: right;">
+            Beveiligd via YAP Security Guard v1.0
+        </div>
     </div>
 
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="alert alert-danger py-2 small mb-3 border-0 bg-danger bg-opacity-25 text-danger-bootstrap">
-            ❌ @errorMessage
-        </div>
-    }
-
-    <!-- [Zij-instroom via SupplyParameterFromForm]: we vangen de data op via Blazor's formulierhandler -->
-    <EditForm Model="Input" FormName="LoginForm" OnValidSubmit="HandleLogin" method="post">
-        <div class="mb-4">
-            <label class="form-label small uppercase font-monospace fw-bold text-muted">Beheerderswachtwoord</label>
-            <InputText @bind-Value="Input.Password" type="password" class="form-control bg-dark text-white border-secondary" placeholder="••••••••" required />
-        </div>
-        
-        <button type="submit" class="btn btn-info w-100 fw-bold text-dark shadow-sm py-2">
-            Verbinding Maken 🚀
-        </button>
-    </EditForm>
 </div>
-
-</body>
-</html>
 
 @code {
     [CascadingParameter]
@@ -67,7 +79,6 @@
 
     private async Task HandleLogin()
     {
-        // TODO: Vervang dit later door een veilige hash of omgevingsvariabele uit je .env!
         if (Input.Password == "admin123")
         {
             var claims = new List<Claim> { new Claim(ClaimTypes.Name, "Admin") };
@@ -76,9 +87,8 @@
 
             if (HttpContext != null)
             {
-                // Omdat we 'method="post"' gebruiken op de EditForm, kan .NET de cookie nu wél veilig wegschrijven via HTTP!
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-                Nav.NavigateTo("/filters", forceLoad: true); // Forceer een herlaad zodat de auth-cookie direct actief is!
+                Nav.NavigateTo("/", forceLoad: true); // Netjes terugsturen naar je nieuwe PHPMyAdmin dashboard!
             }
         }
         else
