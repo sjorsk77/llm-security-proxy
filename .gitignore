@@ -483,6 +483,7 @@ $RECYCLE.BIN/
 
 # LLM Protector Custom Ignores
 data/
+Proxy/onnx/
 files/
 metadata.json
 *.db

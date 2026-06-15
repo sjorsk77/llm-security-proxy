@@ -1,1 +1,9 @@
 (?i)ignore\s+(all\s+)?previous\s+instructions
+(?i)(ignore|override|reset|forget)\s+(all\s+)?(previous|prior)\s+(instructions|prompts|commands|rules)
+(?i)you\s+are\s+now\s+.*
+(?i)system\s+prompt\s+(is|was|override|disable)
+(?i)(ignore|omit)\s+the\s+instructions\s+above
+(?i)you\s+are\s+no\s+longer\s+.*
+(?i)(act\s+as|pretend\s+you\s+are|assume\s+the\s+role\s+of)\s+.*
+(?i)DAN\b
+(?i)(unrestricted|unfiltered|jailbroken|god\s+mode)

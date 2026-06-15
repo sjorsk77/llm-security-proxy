@@ -2,8 +2,8 @@ using llm_protector.protection;
 using dotenv.net;
 using llm_protector;
 using llm_protector.config;
+using llm_protector.decorators;
 using llm_protector.filters;
-using llm_protector.log;
 using llm_protector.ml;
 using llm_protector.protection.filter;
 using llm_protector.protection.riskfiles;
@@ -30,7 +30,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 
-builder.Services.AddSingleton<PromptProtectionService>();
 builder.Services.AddSingleton<ProxyLogService>();
 builder.Services.AddSingleton<RiskFileService>();
 builder.Services.AddSingleton<FilterManagementService>();

@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
-using llm_protector.log;
+using llm_protector.decorators;
 using Shared.settings;
 
 namespace llm_protector.protection;
@@ -57,12 +57,15 @@ public class DecodingService(
                 {
                     string base64Pattern = @"[a-zA-Z0-9+/]{12,}=*";
                     return Regex.Replace(input, base64Pattern, match => {
+                        string val = match.Value;
+                        if (val.Length % 4 != 0) return val;
+    
                         try {
-                            if (match.Value.Length % 4 != 0) return match.Value;
-                            byte[] data = Convert.FromBase64String(match.Value);
+                            byte[] data = Convert.FromBase64String(val);
                             string decoded = Encoding.UTF8.GetString(data);
-                            return decoded.Any(c => char.IsControl(c) && !char.IsWhiteSpace(c)) ? match.Value : decoded;
-                        } catch { return match.Value; }
+                            
+                            return IsPrintable(decoded) ? decoded : val;
+                        } catch { return val; }
                     });
                 }).DecodedContent;
             }
@@ -97,4 +100,9 @@ public class DecodingService(
     
         return currentPrompt;
     }
+    private bool IsPrintable(string input)
+    {
+        return input.All(c => char.IsLetterOrDigit(c) || char.IsPunctuation(c) || char.IsWhiteSpace(c));
+    }
+    
 }

@@ -2,6 +2,7 @@
 @using llm_protector.protection.riskfiles
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject RiskFileService FileService
+@rendermode InteractiveServer
 
 <!-- Main container using flexbox -->
 <div style="display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;">

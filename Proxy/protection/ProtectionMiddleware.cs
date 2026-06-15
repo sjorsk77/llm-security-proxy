@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using llm_protector.decorators;
 using llm_protector.filters;
 using llm_protector.ml;
 using llm_protector.static_filter;
@@ -8,6 +10,7 @@ namespace llm_protector.protection;
 
 public class ProtectionMiddleware(RequestDelegate next)
 {
+    private LogDecorator _logger;
     public async Task InvokeAsync(
         HttpContext context,
         DecodingService decoding,
@@ -15,9 +18,11 @@ public class ProtectionMiddleware(RequestDelegate next)
         PatternFilter patternFilter,
         TfIdfFilter tfIdfFilter,
         OnnxFilter onnxFilter,
+        LogDecorator logger,
         VectorFilter vectorFilter)
     {
         if (!settingsService.IsFilterActive) return;
+        _logger = logger;
         
         context.Request.EnableBuffering();
         using var reader = new StreamReader(context.Request.Body, leaveOpen: true);
@@ -29,34 +34,42 @@ public class ProtectionMiddleware(RequestDelegate next)
         {
             var processedMessage = message with { Content = decoding.DecodeMessage(message.Content) };
             
-            // if (!patternFilter.MessageContainsDangerPattern(processedMessage.Content)) continue;
+            if (!patternFilter.MessageContainsDangerPattern(processedMessage.Content)) continue;
+            
+            var sw = Stopwatch.StartNew();
             
             float tfidfScore = tfIdfFilter.GetInjectionProbability(processedMessage.Content);
             switch (tfidfScore)
             {
                 case > 0.9f:
-                    await BlockRequest(context);
+                    await BlockRequest(context, BlockReason.TF_IDF);
+                    sw.Stop();
+                    logger.MachineLearningProcess(sw.ElapsedMilliseconds);
                     return;
                 case < 0.1f:
                     continue;
             }
 
             float vectorScore = await vectorFilter.CalculateSimilarity(message.Content);
-            // switch (vectorScore)
-            // {
-            //     case > 0.9f:
-            //         await BlockRequest(context);
-            //         return;
-            //     case < 0.5f:
-            //         continue;
-            // }
+            switch (vectorScore)
+            {
+                case > 0.9f:
+                    await BlockRequest(context, BlockReason.EMBEDDING);
+                    return;
+                case < 0.5f:
+                    continue;
+            }
 
             float onnxScore = onnxFilter.GetInjectionProbability(processedMessage.Content);
             if (onnxScore > 0.9f)
             {
-                await BlockRequest(context);
+                await BlockRequest(context, BlockReason.TRANSFORMER);
+                sw.Stop();
+                logger.MachineLearningProcess(sw.ElapsedMilliseconds);
                 return;
             }
+            sw.Stop();
+            logger.MachineLearningProcess(sw.ElapsedMilliseconds);
         }
     }
 
@@ -89,9 +102,9 @@ public class ProtectionMiddleware(RequestDelegate next)
         return messages;
     }
 
-    private async Task BlockRequest(HttpContext context)
+    private async Task BlockRequest(HttpContext context, BlockReason reason)
     {
-        //todo log this
+        _logger.LogBlocked(reason.ToString());
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
         await context.Response.WriteAsJsonAsync(new
         {
@@ -99,6 +112,13 @@ public class ProtectionMiddleware(RequestDelegate next)
             message = "Your request has been blocked by LLMSP security filters",
         });
     }
+}
+
+public enum BlockReason
+{
+    TF_IDF,
+    EMBEDDING,
+    TRANSFORMER
 }
 
 public enum MessageRole

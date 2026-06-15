@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Dapper;
-using llm_protector.log;
+using llm_protector.decorators;
 using Shared;
 
 namespace llm_protector.static_filter;
@@ -17,15 +17,16 @@ public class PatternFilter(LogDecorator logger, DatabaseService db)
             FROM RiskFileItems i
             JOIN RiskFiles f ON i.FileId = f.Id
             WHERE f.IsActive = 1 AND f.FileType = 'PATTERN';").ToList();
-
-        foreach (var item in activePatterns)
+        
+        foreach (var (item, index) in activePatterns.Select((item, index) => (item, index)) )
         {
             try
             {
                 if (Regex.IsMatch(message, item.Pattern, RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(100)))
                 {
                     sw.Stop();
-                    logger.LogStaticFilterStep(StaticFilterType.PATTERN, sw.ElapsedMilliseconds, true);
+                    logger.LogPatternFound(sw.ElapsedMilliseconds, item.Pattern, item.FileName, index);
+                    logger.LogStaticFilterProcess(sw.ElapsedMilliseconds, true);
                     return true;
                 }
             }
@@ -36,7 +37,7 @@ public class PatternFilter(LogDecorator logger, DatabaseService db)
         }
 
         sw.Stop();
-        logger.LogStaticFilterStep(StaticFilterType.PATTERN, sw.ElapsedMilliseconds, false);
+        logger.LogStaticFilterProcess(sw.ElapsedMilliseconds, false);
         return false;
     }
 }
