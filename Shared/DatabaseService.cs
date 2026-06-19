@@ -83,6 +83,16 @@ public class DatabaseService
             );";
         cmd.ExecuteNonQuery();
         
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS PromptTrainingData (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                PromptText TEXT NOT NULL,
+                IsInjection INTEGER NOT NULL,
+                IsSyncedToVectorDb INTEGER NOT NULL,
+                FileName TEXT NOT NULL
+            );";
+        cmd.ExecuteNonQuery();
+        
         cmd.CommandText = "SELECT COUNT(*) FROM Filters;";
         var count = Convert.ToInt32(cmd.ExecuteScalar());
         
@@ -112,7 +122,17 @@ public class DatabaseService
             ('DecodeHtml', 'true'),
             ('DecodeUnicode', 'true'),
             ('RecursiveDecoding', 'true'),
-            ('RecursiveDepth', '3');";
+            ('RecursiveDepth', '3'),
+            ('PatternType', 'HardBlock'),
+            ('EmbeddingActive', 'true'),
+            ('EmbeddingPass', '30'),
+            ('EmbeddingFail', '90'),
+            ('TransformerActive', 'true'),
+            ('TransformerFail', '90'),
+            ('TfIdfActive', 'true'),
+            ('TfIdfPass', '50'),
+            ('TfIdfFail', '90');";
+        
         cmd.ExecuteNonQuery();
     }
 }

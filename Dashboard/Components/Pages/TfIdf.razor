@@ -1,0 +1,165 @@
+@page "/tfidf"
+@using llm_protector.protection.riskfiles
+@using Shared.settings
+@inject TrainingDataService TrainingService
+@inject SettingsService Set
+@rendermode InteractiveServer
+
+<div style="display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;">
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 10px; margin-bottom: 20px; border-bottom: 2px solid #000000;">
+        <div>
+            <h2 style="margin: 0; padding: 0; font-weight: bold;">TF-IDF Management</h2>
+        </div>
+        <div style="font-size: 13px; color: #555555;">
+            Total datasets: <strong>@files.Count</strong>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(status))
+    {
+        <div style="padding: 8px; margin-bottom: 15px; border: 1px solid #808080; background-color: #ffffcc; color: #000000; font-size: 12px;">
+            @status
+        </div>
+    }
+
+    <div style="display: flex; gap: 20px; align-items: flex-start;">
+        <div style="display: flex; flex-direction: column; border: 1px solid #808080; background-color: #f5f5f5; width: 350px; flex-shrink: 0;">
+            <div style="display: flex; background-color: #d4d0c8; padding: 6px 10px; border-bottom: 1px solid #808080;">
+                <span style="font-size: 13px; font-weight: bold; color: #000000;">General</span>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 4px; margin-top: 4px; margin-left: 4px;">
+                <input type="checkbox" id="filterSwitch" @bind="Set.TfIdfActive" style="cursor: pointer; margin: 0; margin-right: 8px;" />
+                <label for="filterSwitch" style="cursor: pointer; font-size: 12px; font-weight: bold; color: @(Set.TfIdfActive ? "#006600" : "#cc0000");">
+                    @(Set.TfIdfActive ? "Active (TF-IDF step is used)" : "Inactive (Skip TF-IDF step)")
+                </label>
+            </div>
+            <div style="display: flex; background-color: #d4d0c8; padding: 6px 10px; border-bottom: 1px solid #808080;">
+                <span style="font-size: 13px; font-weight: bold; color: #000000;">TF-IDF Thresholds</span>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 4px; margin-top: 4px; margin-left: 4px;">
+                <input type="number" min="0" max="100" @bind="Set.TfIdfFail"
+                       style="width: 60px; padding: 2px; font-size: 13px; border: 1px solid #808080; text-align: center; font-weight: bold;"/>
+                <span style="font-size: 12px; font-weight: bold; margin-left: 8px; color: #333333;">
+                    Fail filter percentage
+                </span>
+            </div>
+
+            <div style="display: flex; align-items: center; margin-bottom: 4px; margin-left: 4px;">
+                <input type="number" min="0" max="100" @bind="Set.TfIdfPass"
+                       style="width: 60px; padding: 2px; font-size: 13px; border: 1px solid #808080; text-align: center; font-weight: bold;"/>
+                <span style="font-size: 12px; font-weight: bold; margin-left: 8px; color: #333333;">
+                    Pass filter percentage
+                </span>
+            </div>
+            <div style="display: flex; background-color: #d4d0c8; padding: 6px 10px; border-bottom: 1px solid #808080; border-top: 1px solid #808080;">
+                <span style="font-size: 13px; font-weight: bold; color: #000000;">Import training dataset</span>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <tbody>
+                <tr style="border-bottom: 1px solid #cccccc;">
+                    <td style="padding: 10px; background-color: #eaeaea; width: 35%; font-weight: bold; border-right: 1px solid #cccccc;">
+                        Data type
+                    </td>
+                    <td style="padding: 10px; background-color: #ffffff; width: 65%;">
+                        <div style="display: flex; flex-direction: column; gap: 5px;">
+                            <label><input type="radio" name="type" @onchange="() => isInjection = true"/> Malicious (True)</label>
+                            <label><input type="radio" name="type" @onchange="() => isInjection = false" checked/> Normal (False)</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; background-color: #eaeaea; font-weight: bold; border-right: 1px solid #cccccc; vertical-align: top;">
+                        Select file
+                    </td>
+                    <td style="padding: 10px; background-color: #ffffff;">
+                        <InputFile OnChange="HandleFileSelected" style="width: 100%; font-size: 12px;" accept=".txt"/>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div style="display: flex; justify-content: flex-end; padding: 8px; background-color: #eaeaea; border-top: 1px solid #808080;">
+                <button @onclick="UploadData" disabled="@(selectedFile == null)"
+                        style="padding: 3px 12px; font-size: 13px; font-weight: bold; cursor: pointer; background-color: #eaeaea; border: 1px solid #808080;">
+                    Import dataset
+                </button>
+            </div>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; border: 1px solid #808080; flex-grow: 1;">
+            <div style="display: flex; background-color: #808080; padding: 6px 10px; border-bottom: 1px solid #000000;">
+                <span style="color: #ffffff; font-size: 13px; font-weight: bold;">Loaded training files</span>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; background-color: #ffffff;">
+                <thead style="background-color: #d4d0c8;">
+                    <tr>
+                        <th style="padding: 6px; border-right: 1px solid #808080; border-bottom: 1px solid #000000;">File name</th>
+                        <th style="padding: 6px; border-right: 1px solid #808080; border-bottom: 1px solid #000000; width: 20%;">Item count</th>
+                        <th style="padding: 6px; border-bottom: 1px solid #000000; width: 15%; text-align: center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var file in files)
+                    {
+                        <tr style="border-bottom: 1px solid #cccccc;">
+                            <td style="padding: 6px; border-right: 1px solid #808080; font-weight: bold;">@file</td>
+                            <td style="padding: 6px; border-right: 1px solid #808080;">@TrainingService.GetCountForFile(file)</td>
+                            <td style="padding: 6px; text-align: center;">
+                                <button @onclick="() => DeleteFile(file)" 
+                                        style="padding: 2px 10px; font-size: 12px; color: #cc0000; border: 1px solid #808080; background-color: #f5f5f5; cursor: pointer;">
+                                    Remove
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private IBrowserFile? selectedFile;
+    private bool isInjection = false;
+    private string status = "";
+    private List<string> files = new();
+
+    protected override void OnInitialized() => RefreshFiles();
+
+    private void HandleFileSelected(InputFileChangeEventArgs e) 
+    {
+        selectedFile = e.File;
+        status = $"System: {selectedFile.Name} staged for training import.";
+    }
+
+    private async Task UploadData()
+    {
+        if (selectedFile == null) return;
+        try 
+        {
+            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 1024 * 512);
+            using var reader = new StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+            
+            TrainingService.ImportPromptsFromFile(content, selectedFile.Name, isInjection);
+            status = $"Success: Dataset {selectedFile.Name} imported.";
+            selectedFile = null;
+            RefreshFiles();
+        }
+        catch (Exception ex)
+        {
+            status = $"Error: {ex.Message}";
+        }
+    }
+
+    private void DeleteFile(string fileName)
+    {
+        TrainingService.DeleteDataByFile(fileName);
+        RefreshFiles();
+    }
+
+    private void RefreshFiles() => files = TrainingService.GetUploadedFiles();
+}

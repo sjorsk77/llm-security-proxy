@@ -22,7 +22,7 @@ public class RiskFileService
         return conn.Query<RiskFileMetadataDto>("SELECT Id, FileName, FileType, IsActive FROM RiskFiles;").ToList();
     }
     
-    public async Task SaveUploadedFileAsync(string fileName, string content, FileType fileType)
+    public async Task SaveUploadedFileAsync(string fileName, string content)
     {
         var safeFileName = Path.GetFileName(fileName);
         
@@ -43,7 +43,7 @@ public class RiskFileService
                 INSERT INTO RiskFiles (FileName, FileType, IsActive) 
                 VALUES (@FileName, @FileType, 1);
                 SELECT last_insert_rowid();", 
-                new { FileName = safeFileName, FileType = fileType.ToString() }, 
+                new { FileName = safeFileName, FileType = FileType.PATTERN }, 
                 transaction
             );
             

@@ -1,0 +1,143 @@
+@page "/embedding"
+@using llm_protector.protection.riskfiles
+@using Shared.settings
+@inject SettingsService Set
+@inject TrainingDataService TrainingService
+@rendermode InteractiveServer
+@inject IHttpClientFactory ClientFactory
+
+<div style="display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;">
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 10px; margin-bottom: 20px; border-bottom: 2px solid #000000;">
+        <div>
+            <h2 style="margin: 0; padding: 0; font-weight: bold;">Vector Embedding Management</h2>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 20px; align-items: flex-start;">
+        <div style="display: flex; flex-direction: column; border: 1px solid #808080; background-color: #f5f5f5; width: 350px; flex-shrink: 0;">
+            <div style="display: flex; background-color: #d4d0c8; padding: 6px 10px; border-bottom: 1px solid #808080;">
+                <span style="font-size: 13px; font-weight: bold; color: #000000;">General</span>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 4px; margin-top: 4px; margin-left: 4px;">
+                <input type="checkbox" id="filterSwitch" @bind="Set.TfIdfActive" style="cursor: pointer; margin: 0; margin-right: 8px;" />
+                <label for="filterSwitch" style="cursor: pointer; font-size: 12px; font-weight: bold; color: @(Set.TfIdfActive ? "#006600" : "#cc0000");">
+                    @(Set.EmbeddingActive ? "Active (Embedding step is used)" : "Inactive (Skip Embedding step)")
+                </label>
+            </div>
+            <div style="display: flex; background-color: #d4d0c8; padding: 6px 10px; border-bottom: 1px solid #808080;">
+                <span style="font-size: 13px; font-weight: bold; color: #000000;">Vector embedding Thresholds</span>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 4px; margin-top: 4px; margin-left: 4px;">
+                <input type="number" min="0" max="100" @bind="Set.EmbeddingFail"
+                       style="width: 60px; padding: 2px; font-size: 13px; border: 1px solid #808080; text-align: center; font-weight: bold;"/>
+                <span style="font-size: 12px; font-weight: bold; margin-left: 8px; color: #333333;">
+                    Fail filter percentage
+                </span>
+            </div>
+
+            <div style="display: flex; align-items: center; margin-bottom: 4px; margin-left: 4px;">
+                <input type="number" min="0" max="100" @bind="Set.EmbeddingPass"
+                       style="width: 60px; padding: 2px; font-size: 13px; border: 1px solid #808080; text-align: center; font-weight: bold;"/>
+                <span style="font-size: 12px; font-weight: bold; margin-left: 8px; color: #333333;">
+                    Pass filter percentage
+                </span>
+            </div>
+            
+            <div style="display: flex; background-color: #d4d0c8; padding: 6px 10px; margin-top: 10px; border-bottom: 1px solid #808080; border-top: 1px solid #808080;">
+                <span style="font-size: 13px; font-weight: bold; color: #000000;">Import vector database set</span>
+            </div>
+            <div style="padding: 10px;">
+                <InputFile OnChange="HandleFileSelected" accept=".parquet" style="width: 100%; font-size: 12px;" />
+                @if (isUploading)
+                {
+                    <p style="font-size: 12px; font-weight: bold; color: blue;">Bezig met importeren...</p>
+                }
+            </div>
+            <button @onclick="HandleFileUpload" disabled="@(file == null)"
+                    style="padding: 3px 12px; margin: 4px; font-size: 13px; font-weight: bold; cursor: pointer; background-color: #eaeaea; border: 1px solid #808080;">
+                Import dataset
+            </button>
+            <div style="margin-top: 20px; border-top: 1px solid #808080; padding-top: 10px;">
+                <button @onclick="HandleManualSync" 
+                        style="padding: 5px 12px; font-size: 13px; font-weight: bold; cursor: pointer; background-color: #d4d0c8; border: 1px solid #000;">
+                    Force Manual Sync
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+@code {
+    private IBrowserFile file;
+    private bool isSyncing = false;
+    private bool isUploading = false;
+    
+    
+    private void HandleFileSelected(InputFileChangeEventArgs e) 
+    {
+        file = e.File;
+    }
+
+    private async Task HandleFileUpload()
+    {
+        if (file == null) return;
+        isUploading = true;
+        
+        try
+        {
+            using var memoryStream = new MemoryStream();
+            await file.OpenReadStream(maxAllowedSize: 1024 * 1024 * 50).CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+            
+            await TrainingService.UploadParquetToSqlDatabase(memoryStream, file.Name);
+
+            var client = ClientFactory.CreateClient("ProxyClient");
+            var response = await client.PostAsync("/api/sync-vectors", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"Sync started");
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fout bij upload: {ex.Message}");
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+    
+    private async Task HandleManualSync()
+    {
+        isSyncing = true;
+        try
+        {
+            var client = ClientFactory.CreateClient("ProxyClient");
+
+            var response = await client.PostAsync("/api/sync-vectors", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Handmatige sync succesvol gestart.");
+            }
+            else
+            {
+                Console.WriteLine($"Sync gefaald: {response.ReasonPhrase}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fout bij sync: {ex.Message}");
+        }
+        finally
+        {
+            isSyncing = false;
+        }
+    }
+}

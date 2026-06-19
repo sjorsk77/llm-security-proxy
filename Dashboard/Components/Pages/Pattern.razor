@@ -1,13 +1,13 @@
-@page "/files"
+@page "/pattern"
 @using llm_protector.protection.riskfiles
+@using Shared.settings
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject RiskFileService FileService
+@inject SettingsService Set
 @rendermode InteractiveServer
 
-<!-- Main container using flexbox -->
 <div style="display: flex; flex-direction: column; padding: 15px; box-sizing: border-box;">
-
-    <!-- Page header with flexbox -->
+    
     <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 10px; margin-bottom: 20px; border-bottom: 2px solid #000000;">
         <div>
             <h2 style="margin: 0; padding: 0; font-weight: bold;">File management</h2>
@@ -16,8 +16,7 @@
             Total loaded files: <strong>@FileService.GetRiskFiles().Count</strong>
         </div>
     </div>
-
-    <!-- Status message bar -->
+    
     @if (!string.IsNullOrEmpty(uploadStatus))
     {
         <div style="padding: 8px; margin-bottom: 15px; border: 1px solid #808080; background-color: #ffffcc; color: #000000; font-size: 12px;">
@@ -25,10 +24,7 @@
         </div>
     }
 
-    <!-- Two-column layout using flexbox -->
     <div style="display: flex; gap: 20px; align-items: flex-start;">
-        
-        <!-- Left Column: Upload Form (Classic PHPMyAdmin fieldset style) -->
         <div style="display: flex; flex-direction: column; border: 1px solid #808080; background-color: #f5f5f5; width: 350px; flex-shrink: 0;">
             <div style="display: flex; background-color: #d4d0c8; padding: 6px 10px; border-bottom: 1px solid #808080;">
                 <span style="font-size: 13px; font-weight: bold; color: #000000;">Upload new risk file</span>
@@ -38,12 +34,16 @@
                 <tbody>
                     <tr style="border-bottom: 1px solid #cccccc;">
                         <td style="padding: 10px; background-color: #eaeaea; width: 35%; font-weight: bold; border-right: 1px solid #cccccc;">
-                            File type
+                            Filter Behaviour
                         </td>
                         <td style="padding: 10px; background-color: #ffffff; width: 65%;">
-                            <select @bind="selectedTypeString" style="width: 100%; padding: 2px; font-size: 13px; border: 1px solid #808080;">
-                                <option value="WORD">Word (Sensitive words)</option>
-                                <option value="PATTERN">Pattern (Regex expressions)</option>
+                            <select @bind="Set.PatternType"
+                                    style="padding: 2px; font-size: 12px; border: 1px solid #808080; font-weight: bold; width: 120px;">
+      
+                                @foreach (var type in Enum.GetValues<PatternType>())
+                                {
+                                    <option value="@type">@type.ToString()</option>
+                                }
                             </select>
                         </td>
                     </tr>
@@ -78,7 +78,6 @@
                     <thead style="position: sticky; top: 0; background-color: #d4d0c8; box-shadow: inset 0 -1px 0 #000000; z-index: 1;">
                         <tr>
                             <th style="padding: 6px; border-right: 1px solid #808080; border-bottom: 1px solid #000000;">File name</th>
-                            <th style="padding: 6px; border-right: 1px solid #808080; border-bottom: 1px solid #000000; width: 25%;">Evaluation type</th>
                             <th style="padding: 6px; border-right: 1px solid #808080; border-bottom: 1px solid #000000; width: 20%; text-align: center;">Status</th>
                             <th style="padding: 6px; border-bottom: 1px solid #000000; width: 15%; text-align: center;">Action</th>
                         </tr>
@@ -99,14 +98,6 @@
                                 <tr style="border-bottom: 1px solid #cccccc; background-color: #ffffff;">
                                     <td style="padding: 6px; border-right: 1px solid #808080; font-weight: bold; vertical-align: middle;">
                                         @file.FileName
-                                    </td>
-                                    <td style="padding: 6px; border-right: 1px solid #808080; vertical-align: middle;">
-                                        <select value="@file.FileType.ToString()" 
-                                                @onchange="(e) => OnTypeSelectToggle(file.FileName, e.Value?.ToString())"
-                                                style="padding: 2px; font-size: 12px; border: 1px solid #808080; width: 100%;">
-                                            <option value="WORD">Word (Sensitive)</option>
-                                            <option value="PATTERN">Pattern (Regex)</option>
-                                        </select>
                                     </td>
                                     <td style="padding: 6px; border-right: 1px solid #808080; text-align: center; vertical-align: middle;">
                                         <select value="@(file.IsActive ? "ACTIVE" : "INACTIVE")" 
@@ -134,7 +125,6 @@
 </div>
 
 @code {
-    private string selectedTypeString = "WORD";
     private IBrowserFile? selectedFile = null;
     private string uploadStatus = string.Empty;
     
@@ -150,18 +140,13 @@
         
         try
         {
-            if (!Enum.TryParse<FileType>(selectedTypeString, out var finalFileType))
-            {
-                finalFileType = FileType.WORD;
-            }
-
             using var stream = selectedFile.OpenReadStream(maxAllowedSize: 1024 * 1024);
             using var reader = new StreamReader(stream);
             var content = await reader.ReadToEndAsync();
             
-            await FileService.SaveUploadedFileAsync(selectedFile.Name, content, finalFileType);
+            await FileService.SaveUploadedFileAsync(selectedFile.Name, content);
             
-            uploadStatus = $"Success: File {selectedFile.Name} successfully recorded as database rule type [{finalFileType}].";
+            uploadStatus = $"Success: File {selectedFile.Name} successfully recorded as database.";
             selectedFile = null;
         }
         catch (Exception ex)

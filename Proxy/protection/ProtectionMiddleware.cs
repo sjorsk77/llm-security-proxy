@@ -8,20 +8,35 @@ using Shared.settings;
 
 namespace llm_protector.protection;
 
-public class ProtectionMiddleware(RequestDelegate next)
+public class ProtectionMiddleware
 {
+    private readonly SettingsService _settingsService;
     private LogDecorator _logger;
+
+    public ProtectionMiddleware(RequestDelegate next, SettingsService settingsService)
+    {
+        _settingsService = settingsService;
+    }
+    
     public async Task InvokeAsync(
         HttpContext context,
         DecodingService decoding,
-        SettingsService settingsService,
         PatternFilter patternFilter,
         TfIdfFilter tfIdfFilter,
         OnnxFilter onnxFilter,
         LogDecorator logger,
         VectorFilter vectorFilter)
     {
-        if (!settingsService.IsFilterActive) return;
+        if (context.Request.Path.Equals("/api/sync-vectors", StringComparison.CurrentCultureIgnoreCase))
+        {
+            _ = Task.Run(async () => await vectorFilter.SyncQuadrantFiles());
+            context.Response.StatusCode = StatusCodes.Status202Accepted;
+            await context.Response.WriteAsync("Sync Vectors");
+            return;
+        }
+        
+        
+        if (!_settingsService.IsFilterActive) return;
         _logger = logger;
         
         context.Request.EnableBuffering();
@@ -33,40 +48,60 @@ public class ProtectionMiddleware(RequestDelegate next)
         foreach (var message in messages)
         {
             var processedMessage = message with { Content = decoding.DecodeMessage(message.Content) };
-            
-            if (!patternFilter.MessageContainsDangerPattern(processedMessage.Content)) continue;
-            
-            var sw = Stopwatch.StartNew();
-            
-            float tfidfScore = tfIdfFilter.GetInjectionProbability(processedMessage.Content);
-            switch (tfidfScore)
+
+            switch (_settingsService.PatternType)
             {
-                case > 0.9f:
+                case PatternType.Contains:
+                    if (!patternFilter.MessageContainsDangerPattern(processedMessage.Content)) continue;
+                    break;
+                case PatternType.HardBlock:
+                    if (patternFilter.MessageContainsDangerPattern(processedMessage.Content))
+                    {
+                        await BlockRequest(context, BlockReason.PATTERN);
+                        return;
+                    }
+                    break;
+            }
+
+            var sw = Stopwatch.StartNew();
+            if (_settingsService.TfIdfActive)
+            {
+                float tfidfScore = tfIdfFilter.GetInjectionProbability(processedMessage.Content);
+
+                if (tfidfScore >= _settingsService.TfIdfFail / 100)
+                {
                     await BlockRequest(context, BlockReason.TF_IDF);
                     sw.Stop();
                     logger.MachineLearningProcess(sw.ElapsedMilliseconds);
                     return;
-                case < 0.1f:
-                    continue;
+                }  
+                if (tfidfScore <= _settingsService.TfIdfPass / 100) continue;
             }
 
-            float vectorScore = await vectorFilter.CalculateSimilarity(message.Content);
-            switch (vectorScore)
+            if (_settingsService.EmbeddingActive)
             {
-                case > 0.9f:
+                float vectorScore = await vectorFilter.CalculateSimilarity(message.Content);
+                
+                if (vectorScore >= _settingsService.EmbeddingFail / 100)
+                {
                     await BlockRequest(context, BlockReason.EMBEDDING);
+                    sw.Stop();
+                    logger.MachineLearningProcess(sw.ElapsedMilliseconds);
                     return;
-                case < 0.5f:
-                    continue;
+                }
+                if (vectorScore <= _settingsService.EmbeddingPass / 100) continue;
             }
 
-            float onnxScore = onnxFilter.GetInjectionProbability(processedMessage.Content);
-            if (onnxScore > 0.9f)
+            if (_settingsService.TransformerActive)
             {
-                await BlockRequest(context, BlockReason.TRANSFORMER);
-                sw.Stop();
-                logger.MachineLearningProcess(sw.ElapsedMilliseconds);
-                return;
+                float onnxScore = onnxFilter.GetInjectionProbability(processedMessage.Content);
+                if (onnxScore >= _settingsService.TransformerFail / 100)
+                {
+                    await BlockRequest(context, BlockReason.TRANSFORMER);
+                    sw.Stop();
+                    logger.MachineLearningProcess(sw.ElapsedMilliseconds);
+                    return;
+                }
             }
             sw.Stop();
             logger.MachineLearningProcess(sw.ElapsedMilliseconds);
@@ -109,13 +144,14 @@ public class ProtectionMiddleware(RequestDelegate next)
         await context.Response.WriteAsJsonAsync(new
         {
             error = "Security Policy Violation",
-            message = "Your request has been blocked by LLMSP security filters",
+            message = _settingsService.CustomBlockMessage,
         });
     }
 }
 
 public enum BlockReason
 {
+    PATTERN,
     TF_IDF,
     EMBEDDING,
     TRANSFORMER

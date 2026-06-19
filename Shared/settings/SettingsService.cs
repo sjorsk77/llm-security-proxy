@@ -31,6 +31,11 @@ public class SettingsService
         {
             return (T)Convert.ChangeType(rawValue, typeof(T));
         }
+        
+        if (typeof(T).IsEnum)
+        {
+            return (T)Enum.Parse(typeof(T), rawValue);
+        }
 
         try
         {
@@ -107,4 +112,64 @@ public class SettingsService
         get => GetValue<int>("RecursiveDepth");
         set => SetValue("RecursiveDepth", value);
     }
+    
+    public bool TfIdfActive
+    {
+        get => GetValue<bool>("TfIdfActive");
+        set => SetValue("TfIdfActive", value);
+    }
+    
+    public float TfIdfPass
+    {
+        get => GetValue<float>("TfIdfPass");
+        set => SetValue("TfIdfPass", value > 100 ? 100 : value);
+    }
+    
+    public float TfIdfFail
+    {
+        get => GetValue<float>("TfIdfFail");
+        set => SetValue("TfIdfFail", value > 100 ? 100 : value);
+    }
+    public bool EmbeddingActive
+    {
+        get => GetValue<bool>("EmbeddingActive");
+        set => SetValue("EmbeddingActive", value);
+    }
+    
+    public float EmbeddingPass
+    {
+        get => GetValue<float>("EmbeddingPass");
+        set => SetValue("EmbeddingPass", value > 100 ? 100 : value);
+    }
+    
+    public float EmbeddingFail
+    {
+        get => GetValue<float>("EmbeddingFail");
+        set => SetValue("EmbeddingFail", value > 100 ? 100 : value);
+    }
+    
+    public bool TransformerActive
+    {
+        get => GetValue<bool>("TransformerActive");
+        set => SetValue("TransformerActive", value);
+    }
+    
+    public float TransformerFail
+    {
+        get => GetValue<float>("TransformerFail");
+        set => SetValue("TransformerFail", value > 100 ? 100 : value);
+    }
+    
+    public PatternType PatternType
+    {
+        get => GetValue<PatternType>("PatternType");
+        set => SetValue("PatternType", value);
+    }
+}
+
+public enum PatternType
+{
+    Off,
+    HardBlock,
+    Contains
 }
