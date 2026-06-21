@@ -20,7 +20,7 @@
                 <span style="font-size: 13px; font-weight: bold; color: #000000;">General</span>
             </div>
             <div style="display: flex; align-items: center; margin-bottom: 4px; margin-top: 4px; margin-left: 4px;">
-                <input type="checkbox" id="filterSwitch" @bind="Set.TfIdfActive" style="cursor: pointer; margin: 0; margin-right: 8px;" />
+                <input type="checkbox" id="filterSwitch" @bind="Set.EmbeddingActive" style="cursor: pointer; margin: 0; margin-right: 8px;" />
                 <label for="filterSwitch" style="cursor: pointer; font-size: 12px; font-weight: bold; color: @(Set.TfIdfActive ? "#006600" : "#cc0000");">
                     @(Set.EmbeddingActive ? "Active (Embedding step is used)" : "Inactive (Skip Embedding step)")
                 </label>

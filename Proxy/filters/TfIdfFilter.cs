@@ -34,12 +34,11 @@ public class TfIdfFilter
             .Append(mlContext.BinaryClassification.Trainers.SdcaLogisticRegression(labelColumnName: "Label",
                 featureColumnName: "Features"));
 
-        var trainingData = GetTrainingData();
-        var dataView = mlContext.Data.LoadFromEnumerable(trainingData);
+         var trainingData = GetTrainingData();
+         var dataView = mlContext.Data.LoadFromEnumerable(trainingData);
 
-        var model = pipeline.Fit(dataView);
-        _predictionEngine = mlContext.Model.CreatePredictionEngine<PromptInput, PromptPrediction>(model);
-
+         var model = pipeline.Fit(dataView);
+         _predictionEngine = mlContext.Model.CreatePredictionEngine<PromptInput, PromptPrediction>(model);
     }
 
     public float GetInjectionProbability(string message)

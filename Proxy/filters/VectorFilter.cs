@@ -64,18 +64,18 @@ public class VectorFilter
             
             points.Add(new PointStruct
             {
-                Id = new PointId(),
+                Id = Guid.Parse(Guid.NewGuid().ToString()),
                 Vectors = vector,
                 Payload = {{ "prompt", unsyncedItem.PromptText }, {"is_injection", unsyncedItem.IsInjection}}
             });
-
-            await _qdrantClient.UpsertAsync("jailbreak_prompts", points);
-
-            var ids = unsyncedItems.Select(i => i.Id).ToList();
-            await connection.ExecuteAsync(
-                "UPDATE PromptTrainingData SET IsSyncedToVectorDb = 1 WHERE Id IN @Ids", 
-                new { Ids = ids });
         }
+        
+        await _qdrantClient.UpsertAsync("jailbreak_prompts", points);
+
+        var ids = unsyncedItems.Select(i => i.Id).ToList();
+        await connection.ExecuteAsync(
+            "UPDATE PromptTrainingData SET IsSyncedToVectorDb = 1 WHERE Id IN @Ids", 
+            new { Ids = ids });
     }
 
     private List<string> GetMessageSegments(string content)

@@ -8,11 +8,11 @@ public class TokenizerHelper
 
     public TokenizerHelper()
     {
-        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        /*string baseDir = AppDomain.CurrentDomain.BaseDirectory;
         string spmModelPath = Path.Combine(baseDir, "onnx", "spm.model");
         
         using var stream = File.OpenRead(spmModelPath);
-        _tokenizer = SentencePieceTokenizer.Create(stream);
+        _tokenizer = SentencePieceTokenizer.Create(stream);*/
     }
 
     public (long[] ids, long[] mask) Tokenize(string prompt)

@@ -49,10 +49,10 @@ public class LogDecorator(ILogger<LogDecorator> _logger)
             LogCategory.STATIC, duration, pattern, fileName, iterations);
     }
     
-    public void LogMachineLearningStep(MachineLearningType machineLearningType, long duration)
+    public void LogMachineLearningStep(MachineLearningType machineLearningType, long duration, float score, string requestId)
     {
-        _logger.LogInformation("MachineLearningType: {MachineLearningType}, Duration: {Duration}", 
-            machineLearningType, duration);
+        _logger.LogInformation("MachineLearningType: {MachineLearningType}, Duration: {Duration}, Score: {Score}, RequestId: {RequestId}",
+            machineLearningType, duration, score, requestId);
     }
     
     public void MachineLearningProcess(long duration)

@@ -10,12 +10,12 @@ public class OnnxPromptAnalyzer
 
     public OnnxPromptAnalyzer(TokenizerHelper tokenizer)
     {
-        _tokenizer = tokenizer;
+        /*_tokenizer = tokenizer;
         string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        string onnxPath = Path.Combine(baseDir, "onnx", "model_optimized.onnx");
+        string onnxPath = Path.Combine(baseDir, "onnx", "m.onnx");
         string spmModelPath = Path.Combine(baseDir, "onnx", "spm.model");
         
-        _session = new InferenceSession(onnxPath);
+        _session = new InferenceSession(onnxPath);*/
     }
 
     public float AnalyzePromptEmbedded(string prompt)
